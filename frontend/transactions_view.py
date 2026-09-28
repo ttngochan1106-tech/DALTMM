@@ -1,7 +1,7 @@
 import tkinter as tk
 import services
 from .theme import (
-    BG_MAIN, CARD_WHITE, CARD_SOFT_BLUE, PRIMARY_BLUE, PILL_BLUE, PILL_BLUE_HOVER,
+    BG_MAIN, CARD_WHITE, PRIMARY_BLUE, PILL_BLUE, PILL_BLUE_HOVER,
     SIDEBAR_ACTIVE_BG, BORDER_COLOR, TEXT_DARK, TEXT_MEDIUM, TEXT_MUTED,
     TEXT_GREEN, BADGE_FRAUD_BG, BADGE_FRAUD_FG, BADGE_VALID_BG, BADGE_VALID_FG,
     FONT_FAMILY
@@ -10,7 +10,7 @@ from .theme import (
 
 class TransactionsView(tk.Frame):
     """
-    Sidebar 'Transactions' View:
+    Sidebar 'Transactions' View with responsive layouts for Desktop, Tablet, and Mobile:
     - Shows recent transactions of the current user (All transactions / Incomes / Expenses)
     - Live cryptographic verification (SHA-256 + RSA-PSS signature check)
     - Interactive Verify & [DEMO] Tamper Amount inspector
@@ -23,31 +23,27 @@ class TransactionsView(tk.Frame):
         self.search_var = search_var
         self.tx_filter = "all"
         self.selected_tx_id = None
+        self.layout_mode = "desktop"
         self._build_ui()
 
     def _build_ui(self):
-        self.columnconfigure(0, weight=13)
-        self.columnconfigure(1, weight=9)
-        self.rowconfigure(0, weight=1)
-
         # =====================================================================
-        # LEFT PANEL: RECENT TRANSACTIONS OF CURRENT USER
+        # PANEL 1: RECENT TRANSACTIONS OF CURRENT USER
         # =====================================================================
-        left_card = tk.Frame(
-            self, bg=CARD_WHITE, padx=22, pady=20,
+        self.left_card = tk.Frame(
+            self, bg=CARD_WHITE, padx=18, pady=18,
             highlightbackground=BORDER_COLOR, highlightthickness=1
         )
-        left_card.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
-        left_card.columnconfigure(0, weight=1)
-        left_card.rowconfigure(3, weight=1)
+        self.left_card.columnconfigure(0, weight=1)
+        self.left_card.rowconfigure(3, weight=1)
 
-        # Header
-        hdr = tk.Frame(left_card, bg=CARD_WHITE)
+        hdr = tk.Frame(self.left_card, bg=CARD_WHITE)
         hdr.grid(row=0, column=0, sticky="ew")
-        tk.Label(
+        self.title_lbl = tk.Label(
             hdr, text=f"Recent Transactions ({self.current_user})",
-            font=(FONT_FAMILY, 14, "bold"), fg=TEXT_DARK, bg=CARD_WHITE
-        ).pack(side="left")
+            font=(FONT_FAMILY, 13, "bold"), fg=TEXT_DARK, bg=CARD_WHITE
+        )
+        self.title_lbl.pack(side="left")
 
         tk.Button(
             hdr, text="↻ Refresh",
@@ -58,9 +54,8 @@ class TransactionsView(tk.Frame):
             command=self.refresh_data
         ).pack(side="right")
 
-        # Filter Tabs (All transactions | Incomes | Expenses)
-        tabs_bar = tk.Frame(left_card, bg=CARD_WHITE)
-        tabs_bar.grid(row=1, column=0, sticky="ew", pady=(14, 4))
+        tabs_bar = tk.Frame(self.left_card, bg=CARD_WHITE)
+        tabs_bar.grid(row=1, column=0, sticky="ew", pady=(12, 4))
 
         self.tab_btns = {}
         for key, label in [("all", "All transactions"), ("incomes", "Incomes"), ("expenses", "Expenses")]:
@@ -70,21 +65,20 @@ class TransactionsView(tk.Frame):
                 bg=CARD_WHITE,
                 fg=PRIMARY_BLUE if key == "all" else TEXT_MEDIUM,
                 activebackground=CARD_WHITE, activeforeground=PRIMARY_BLUE,
-                relief="flat", bd=0, padx=8, pady=4, cursor="hand2",
+                relief="flat", bd=0, padx=6, pady=4, cursor="hand2",
                 command=lambda k=key: self._set_filter(k)
             )
-            btn.pack(side="left", padx=(0, 14))
+            btn.pack(side="left", padx=(0, 10))
             self.tab_btns[key] = btn
 
-        tk.Frame(left_card, bg="#F1F5F9", height=1).grid(row=2, column=0, sticky="ew", pady=(0, 8))
+        tk.Frame(self.left_card, bg="#F1F5F9", height=1).grid(row=2, column=0, sticky="ew", pady=(0, 8))
 
-        # Scrollable Transactions List
-        list_container = tk.Frame(left_card, bg=CARD_WHITE)
+        list_container = tk.Frame(self.left_card, bg=CARD_WHITE)
         list_container.grid(row=3, column=0, sticky="nsew")
         list_container.columnconfigure(0, weight=1)
         list_container.rowconfigure(0, weight=1)
 
-        self.list_canvas = tk.Canvas(list_container, bg=CARD_WHITE, highlightthickness=0)
+        self.list_canvas = tk.Canvas(list_container, bg=CARD_WHITE, height=280, highlightthickness=0)
         scrollbar = tk.Scrollbar(list_container, orient="vertical", command=self.list_canvas.yview)
         self.rows_frame = tk.Frame(self.list_canvas, bg=CARD_WHITE)
 
@@ -103,30 +97,29 @@ class TransactionsView(tk.Frame):
         scrollbar.grid(row=0, column=1, sticky="ns")
 
         # =====================================================================
-        # RIGHT PANEL: CRYPTO VERIFY & [DEMO] TAMPER AMOUNT
+        # PANEL 2: CRYPTO VERIFY & [DEMO] TAMPER AMOUNT
         # =====================================================================
-        right_card = tk.Frame(
-            self, bg=CARD_WHITE, padx=22, pady=20,
+        self.right_card = tk.Frame(
+            self, bg=CARD_WHITE, padx=18, pady=18,
             highlightbackground=BORDER_COLOR, highlightthickness=1
         )
-        right_card.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
 
         tk.Label(
-            right_card, text="🛡 Verify & Tamper Inspector",
+            self.right_card, text="🛡 Verify & Tamper Inspector",
             font=(FONT_FAMILY, 13, "bold"), fg=TEXT_DARK, bg=CARD_WHITE
         ).pack(anchor="w")
-        tk.Label(
-            right_card, text="Chọn 1 giao dịch bên trái hoặc nhập Transaction ID để kiểm tra chữ ký số RSA-PSS hoặc giả lập tấn công sửa số tiền (Tamper).",
-            font=(FONT_FAMILY, 9), fg=TEXT_MUTED, bg=CARD_WHITE, wraplength=330, justify="left"
-        ).pack(anchor="w", pady=(2, 14))
+        self.insp_desc_lbl = tk.Label(
+            self.right_card, text="Chọn 1 giao dịch hoặc nhập Transaction ID để kiểm tra chữ ký số RSA-PSS hoặc giả lập sửa số tiền (Tamper).",
+            font=(FONT_FAMILY, 9), fg=TEXT_MUTED, bg=CARD_WHITE, wraplength=320, justify="left"
+        )
+        self.insp_desc_lbl.pack(anchor="w", pady=(2, 12))
 
-        # Transaction ID input
         tk.Label(
-            right_card, text="Transaction ID",
+            self.right_card, text="Transaction ID",
             font=(FONT_FAMILY, 9, "bold"), fg=TEXT_DARK, bg=CARD_WHITE
         ).pack(anchor="w", pady=(0, 4))
 
-        txid_box = tk.Frame(right_card, bg="#F8FAFC", highlightbackground=BORDER_COLOR, highlightthickness=1)
+        txid_box = tk.Frame(self.right_card, bg="#F8FAFC", highlightbackground=BORDER_COLOR, highlightthickness=1)
         txid_box.pack(fill="x", pady=(0, 10))
         self.tx_id_var = tk.StringVar()
         tk.Entry(
@@ -135,7 +128,7 @@ class TransactionsView(tk.Frame):
         ).pack(fill="x", padx=10, pady=7)
 
         tk.Button(
-            right_card, text="🔍  Verify Giao Dịch (Kiểm tra chữ ký & Hash)",
+            self.right_card, text="🔍  Verify Giao Dịch (RSA-PSS & SHA-256)",
             font=(FONT_FAMILY, 9, "bold"),
             bg=PILL_BLUE, fg="#FFFFFF",
             activebackground=PILL_BLUE_HOVER, activeforeground="#FFFFFF",
@@ -143,46 +136,44 @@ class TransactionsView(tk.Frame):
             command=self._handle_verify
         ).pack(fill="x", pady=(0, 12))
 
-        # Verification Result Box
         self.verify_box = tk.Frame(
-            right_card, bg="#F8FAFC", padx=12, pady=12,
+            self.right_card, bg="#F8FAFC", padx=12, pady=10,
             highlightbackground=BORDER_COLOR, highlightthickness=1
         )
-        self.verify_box.pack(fill="x", pady=(0, 16))
+        self.verify_box.pack(fill="x", pady=(0, 14))
 
         self.verify_badge_lbl = tk.Label(
             self.verify_box, text="Chưa chọn giao dịch",
-            font=(FONT_FAMILY, 9, "bold"), fg=TEXT_MEDIUM, bg="#F8FAFC"
+            font=(FONT_FAMILY, 9, "bold"), fg=TEXT_MEDIUM, bg="#F8FAFC", wraplength=300, justify="left"
         )
         self.verify_badge_lbl.pack(anchor="w")
 
         self.verify_detail_lbl = tk.Label(
             self.verify_box,
-            text="Nhấn vào một dòng giao dịch bên trái để xem chi tiết SHA-256 hash và chữ ký RSA-PSS.",
+            text="Nhấn vào một dòng giao dịch để xem chi tiết SHA-256 hash và chữ ký RSA-PSS.",
             font=("Consolas", 8), fg=TEXT_MEDIUM, bg="#F8FAFC",
-            justify="left", wraplength=310
+            justify="left", wraplength=300
         )
         self.verify_detail_lbl.pack(anchor="w", pady=(6, 0))
 
-        # Divider
-        tk.Frame(right_card, bg=BORDER_COLOR, height=1).pack(fill="x", pady=(2, 14))
+        tk.Frame(self.right_card, bg=BORDER_COLOR, height=1).pack(fill="x", pady=(2, 12))
 
-        # [DEMO] Tamper Amount Section
         tk.Label(
-            right_card, text="⚠  [DEMO] Tamper Amount (Sửa DB trái phép)",
+            self.right_card, text="⚠  [DEMO] Tamper Amount (Sửa DB trái phép)",
             font=(FONT_FAMILY, 10, "bold"), fg=BADGE_FRAUD_BG, bg=CARD_WHITE
         ).pack(anchor="w")
-        tk.Label(
-            right_card, text="Thay đổi số tiền trực tiếp trong DB mà không có Private Key để thấy Verify phát hiện Possible fraud (INVALID).",
-            font=(FONT_FAMILY, 8), fg=TEXT_MUTED, bg=CARD_WHITE, wraplength=330, justify="left"
-        ).pack(anchor="w", pady=(2, 8))
+        self.tamp_desc_lbl = tk.Label(
+            self.right_card, text="Thay đổi số tiền trực tiếp trong DB mà không có Private Key để thấy Verify phát hiện Possible fraud (INVALID).",
+            font=(FONT_FAMILY, 8), fg=TEXT_MUTED, bg=CARD_WHITE, wraplength=320, justify="left"
+        )
+        self.tamp_desc_lbl.pack(anchor="w", pady=(2, 8))
 
         tk.Label(
-            right_card, text="Amount mới (New Tampered Amount)",
+            self.right_card, text="Amount mới (New Tampered Amount)",
             font=(FONT_FAMILY, 9, "bold"), fg=TEXT_DARK, bg=CARD_WHITE
         ).pack(anchor="w", pady=(0, 4))
 
-        tamp_box = tk.Frame(right_card, bg="#F8FAFC", highlightbackground=BORDER_COLOR, highlightthickness=1)
+        tamp_box = tk.Frame(self.right_card, bg="#F8FAFC", highlightbackground=BORDER_COLOR, highlightthickness=1)
         tamp_box.pack(fill="x", pady=(0, 10))
         self.tamper_amount_var = tk.StringVar()
         tk.Entry(
@@ -191,13 +182,13 @@ class TransactionsView(tk.Frame):
         ).pack(fill="x", padx=10, pady=7)
 
         self.tamper_msg_lbl = tk.Label(
-            right_card, text="", font=(FONT_FAMILY, 8, "bold"),
-            fg=BADGE_FRAUD_BG, bg=CARD_WHITE, wraplength=320, justify="left"
+            self.right_card, text="", font=(FONT_FAMILY, 8, "bold"),
+            fg=BADGE_FRAUD_BG, bg=CARD_WHITE, wraplength=300, justify="left"
         )
         self.tamper_msg_lbl.pack(anchor="w", pady=(0, 6))
 
         tk.Button(
-            right_card, text="⚠  Thực hiện Tamper Amount",
+            self.right_card, text="⚠  Thực hiện Tamper Amount",
             font=(FONT_FAMILY, 9, "bold"),
             bg=BADGE_FRAUD_BG, fg="#FFFFFF",
             activebackground="#991B1B", activeforeground="#FFFFFF",
@@ -205,7 +196,41 @@ class TransactionsView(tk.Frame):
             command=self._handle_tamper
         ).pack(fill="x")
 
+        self._apply_layout_grid()
         self.refresh_data()
+
+    def set_layout_mode(self, mode: str):
+        if mode == self.layout_mode:
+            return
+        self.layout_mode = mode
+        self._apply_layout_grid()
+        self.refresh_data()
+
+    def _apply_layout_grid(self):
+        self.left_card.grid_forget()
+        self.right_card.grid_forget()
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=0)
+        self.rowconfigure(0, weight=0)
+        self.rowconfigure(1, weight=0)
+
+        if self.layout_mode == "desktop":
+            self.columnconfigure(0, weight=13)
+            self.columnconfigure(1, weight=9)
+            self.rowconfigure(0, weight=1)
+            self.left_card.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+            self.right_card.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+            wrap_w = 320
+        else:
+            # Tablet & Mobile: stack vertically
+            self.left_card.grid(row=0, column=0, sticky="ew", pady=(0, 12))
+            self.right_card.grid(row=1, column=0, sticky="ew", pady=(0, 8))
+            wrap_w = 285 if self.layout_mode == "mobile" else 520
+
+        self.insp_desc_lbl.config(wraplength=wrap_w)
+        self.tamp_desc_lbl.config(wraplength=wrap_w)
+        self.verify_badge_lbl.config(wraplength=wrap_w)
+        self.verify_detail_lbl.config(wraplength=wrap_w)
 
     def _set_filter(self, key: str):
         self.tx_filter = key
@@ -245,10 +270,9 @@ class TransactionsView(tk.Frame):
             ).pack()
             return
 
-        for idx, r in enumerate(filtered):
+        for r in filtered:
             self._create_tx_row(r)
 
-        # Automatically select the first transaction if none selected
         if not self.tx_id_var.get().strip() and filtered:
             self._select_transaction(filtered[0]["id"], filtered[0]["amount"])
 
@@ -256,64 +280,62 @@ class TransactionsView(tk.Frame):
         tx_id = r["id"]
         is_sender = (r["sender_username"] == self.current_user)
         counterparty = r["receiver_username"] if is_sender else r["sender_username"]
-        direction_txt = f"{r['sender_username']}  →  {r['receiver_username']}"
+        direction_txt = f"{r['sender_username']} → {r['receiver_username']}"
         amount = float(r["amount"])
         valid, _, _ = services.verify_transaction(tx_id)
+        is_mobile = (self.layout_mode == "mobile")
 
-        row_frame = tk.Frame(self.rows_frame, bg=CARD_WHITE, pady=10, padx=6, cursor="hand2")
+        row_frame = tk.Frame(self.rows_frame, bg=CARD_WHITE, pady=8, padx=4, cursor="hand2")
         row_frame.pack(fill="x")
 
-        # Avatar circle via small canvas
-        av_canvas = tk.Canvas(row_frame, width=38, height=38, bg=CARD_WHITE, highlightthickness=0)
-        av_canvas.pack(side="left", padx=(0, 12))
+        av_canvas = tk.Canvas(row_frame, width=36, height=36, bg=CARD_WHITE, highlightthickness=0)
+        av_canvas.pack(side="left", padx=(0, 10))
         av_bg = "#FEE2E2" if not valid else "#DDD6FE"
         av_fg = "#991B1B" if not valid else "#3730A3"
-        av_canvas.create_oval(2, 2, 36, 36, fill=av_bg, outline="")
+        av_canvas.create_oval(2, 2, 34, 34, fill=av_bg, outline="")
         initials = "".join(p[0].upper() for p in counterparty.split()[:2]) or counterparty[:2].upper()
-        av_canvas.create_text(19, 19, text=initials, font=(FONT_FAMILY, 9, "bold"), fill=av_fg)
+        av_canvas.create_text(18, 18, text=initials, font=(FONT_FAMILY, 8, "bold"), fill=av_fg)
 
-        # Middle info: Name + TX ID + Timestamp
         mid = tk.Frame(row_frame, bg=CARD_WHITE)
         mid.pack(side="left", fill="x", expand=True)
 
+        top_line = counterparty if is_mobile else f"{counterparty}   ({direction_txt})"
         tk.Label(
-            mid, text=f"{counterparty}   ({direction_txt})",
-            font=(FONT_FAMILY, 10, "bold"), fg=TEXT_DARK, bg=CARD_WHITE, anchor="w"
+            mid, text=top_line,
+            font=(FONT_FAMILY, 9 if is_mobile else 10, "bold"), fg=TEXT_DARK, bg=CARD_WHITE, anchor="w"
         ).pack(fill="x")
 
+        sub_line = tx_id[-12:] if is_mobile else f"{tx_id}   •   {r['timestamp']}"
         tk.Label(
-            mid, text=f"{tx_id}   •   {r['timestamp']}",
+            mid, text=sub_line,
             font=(FONT_FAMILY, 8), fg=TEXT_MUTED, bg=CARD_WHITE, anchor="w"
         ).pack(fill="x", pady=(2, 0))
 
-        # Right side: Amount + Fraud/Valid badge
         right = tk.Frame(row_frame, bg=CARD_WHITE)
-        right.pack(side="right", padx=(8, 4))
+        right.pack(side="right", padx=(6, 2))
 
         amt_str = f"-${amount:,.2f}" if is_sender else f"+${amount:,.2f}"
         amt_col = TEXT_DARK if is_sender else TEXT_GREEN
         tk.Label(
             right, text=amt_str,
-            font=(FONT_FAMILY, 10, "bold"), fg=amt_col, bg=CARD_WHITE, anchor="e"
+            font=(FONT_FAMILY, 9 if is_mobile else 10, "bold"), fg=amt_col, bg=CARD_WHITE, anchor="e"
         ).pack(anchor="e")
 
         if not valid:
             tk.Label(
                 right, text=" Possible fraud ",
-                font=(FONT_FAMILY, 8, "bold"),
-                bg=BADGE_FRAUD_BG, fg=BADGE_FRAUD_FG, padx=6, pady=1
-            ).pack(anchor="e", pady=(3, 0))
+                font=(FONT_FAMILY, 7 if is_mobile else 8, "bold"),
+                bg=BADGE_FRAUD_BG, fg=BADGE_FRAUD_FG, padx=5, pady=1
+            ).pack(anchor="e", pady=(2, 0))
         else:
             tk.Label(
                 right, text=" ✓ Verified ",
-                font=(FONT_FAMILY, 8, "bold"),
-                bg=BADGE_VALID_BG, fg=BADGE_VALID_FG, padx=6, pady=1
-            ).pack(anchor="e", pady=(3, 0))
+                font=(FONT_FAMILY, 7 if is_mobile else 8, "bold"),
+                bg=BADGE_VALID_BG, fg=BADGE_VALID_FG, padx=5, pady=1
+            ).pack(anchor="e", pady=(2, 0))
 
-        # Divider
         tk.Frame(self.rows_frame, bg="#F1F5F9", height=1).pack(fill="x")
 
-        # Click binding on row and children to inspect transaction
         def on_click(e, tid=tx_id, amt=amount):
             self._select_transaction(tid, amt)
 
@@ -346,11 +368,11 @@ class TransactionsView(tk.Frame):
             self.verify_badge_lbl.config(text=f"⚠ Possible fraud — {msg}", fg=BADGE_FRAUD_BG)
 
         info_lines = [
-            f"Transaction ID : {tx_id}",
-            f"Hash Match     : {'✓ OK' if details['hash_ok'] else '✗ MISMATCH (Data altered!)'}",
-            f"RSA Signature  : {'✓ OK' if details['signature_ok'] else '✗ INVALID SIGNATURE'}",
-            f"Stored Hash    : {details['stored_hash'][:28]}...",
-            f"Recalc Hash    : {details['recalculated_hash'][:28]}...",
+            f"TX ID     : {tx_id}",
+            f"Hash      : {'✓ OK' if details['hash_ok'] else '✗ MISMATCH'}",
+            f"Signature : {'✓ OK' if details['signature_ok'] else '✗ INVALID'}",
+            f"Stored    : {details['stored_hash'][:22]}...",
+            f"Recalc    : {details['recalculated_hash'][:22]}...",
         ]
         self.verify_detail_lbl.config(text="\n".join(info_lines))
 
